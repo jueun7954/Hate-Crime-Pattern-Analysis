@@ -1,0 +1,283 @@
+<!-- preamble start -->
+<!DOCTYPE html> 
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tinytable_t5zssv0xe944g1qagyct</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+<!-- preamble end -->
+
+    <script>
+      function styleCell_t5zssv0xe944g1qagyct(i, j, css_id) {
+        var table = document.getElementById("tinytable_t5zssv0xe944g1qagyct");
+        table.rows[i].cells[j].classList.add(css_id);
+      }
+      function insertSpanRow(i, colspan, content) {
+        var table = document.getElementById('tinytable_t5zssv0xe944g1qagyct');
+        var newRow = table.insertRow(i);
+        var newCell = newRow.insertCell(0);
+        newCell.setAttribute("colspan", colspan);
+        // newCell.innerText = content;
+        // this may be unsafe, but innerText does not interpret <br>
+        newCell.innerHTML = content;
+      }
+      function spanCell_t5zssv0xe944g1qagyct(i, j, rowspan, colspan) {
+        var table = document.getElementById("tinytable_t5zssv0xe944g1qagyct");
+        const targetRow = table.rows[i];
+        const targetCell = targetRow.cells[j];
+        for (let r = 0; r < rowspan; r++) {
+          // Only start deleting cells to the right for the first row (r == 0)
+          if (r === 0) {
+            // Delete cells to the right of the target cell in the first row
+            for (let c = colspan - 1; c > 0; c--) {
+              if (table.rows[i + r].cells[j + c]) {
+                table.rows[i + r].deleteCell(j + c);
+              }
+            }
+          }
+          // For rows below the first, delete starting from the target column
+          if (r > 0) {
+            for (let c = colspan - 1; c >= 0; c--) {
+              if (table.rows[i + r] && table.rows[i + r].cells[j]) {
+                table.rows[i + r].deleteCell(j);
+              }
+            }
+          }
+        }
+        // Set rowspan and colspan of the target cell
+        targetCell.rowSpan = rowspan;
+        targetCell.colSpan = colspan;
+      }
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(0, 0, 'tinytable_css_id359ir86nhn7fhsof4m25') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(0, 1, 'tinytable_css_idzim7i6b1hma1ooglclo8') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(1, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(1, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(2, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(2, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(3, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(3, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(4, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(4, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(5, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(5, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(6, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(6, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(7, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(7, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(8, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(8, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(9, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(9, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(10, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(10, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(11, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(11, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(12, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(12, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(13, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(13, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(14, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(14, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(15, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(15, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(16, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(16, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(17, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(17, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(18, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(18, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(19, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(19, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(20, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(20, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(21, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(21, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(22, 0, 'tinytable_css_idxbd9fx91k7wwenhyf3xr') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(22, 1, 'tinytable_css_id9xr5biy7r1ciuaaswqo7') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(23, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(23, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(24, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(24, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(25, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(25, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(26, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(26, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(27, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(27, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(28, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(28, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(29, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(29, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(30, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(30, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(31, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(31, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(32, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(32, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(33, 0, 'tinytable_css_idoiabw76ey6cj8bdr8vzi') })
+window.addEventListener('load', function () { styleCell_t5zssv0xe944g1qagyct(33, 1, 'tinytable_css_idynbeezo4dg1naw6epmao') })
+    </script>
+
+    <style>
+    .table td.tinytable_css_id359ir86nhn7fhsof4m25, .table th.tinytable_css_id359ir86nhn7fhsof4m25 {  text-align: left;  border-bottom: solid 0.1em #d3d8dc; }
+    .table td.tinytable_css_idzim7i6b1hma1ooglclo8, .table th.tinytable_css_idzim7i6b1hma1ooglclo8 {  text-align: center;  border-bottom: solid 0.1em #d3d8dc; }
+    .table td.tinytable_css_idoiabw76ey6cj8bdr8vzi, .table th.tinytable_css_idoiabw76ey6cj8bdr8vzi {  text-align: left; }
+    .table td.tinytable_css_idynbeezo4dg1naw6epmao, .table th.tinytable_css_idynbeezo4dg1naw6epmao {  text-align: center; }
+    .table td.tinytable_css_idxbd9fx91k7wwenhyf3xr, .table th.tinytable_css_idxbd9fx91k7wwenhyf3xr {  border-bottom: solid 0.05em black;  text-align: left; }
+    .table td.tinytable_css_id9xr5biy7r1ciuaaswqo7, .table th.tinytable_css_id9xr5biy7r1ciuaaswqo7 {  border-bottom: solid 0.05em black;  text-align: center; }
+    </style>
+    <div class="container">
+      <table class="table table-borderless" id="tinytable_t5zssv0xe944g1qagyct" style="width: auto; margin-left: auto; margin-right: auto;" data-quarto-disable-processing='true'>
+        <thead>
+        <caption>Fixed Effects Model Results for Total Hate Crimes</caption>
+              <tr>
+                <th scope="col"> </th>
+                <th scope="col">(1)</th>
+              </tr>
+        </thead>
+        
+        <tbody>
+                <tr>
+                  <td>Young               </td>
+                  <td>−200.713  </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(207.325) </td>
+                </tr>
+                <tr>
+                  <td>Middle-Aged         </td>
+                  <td>−189.583  </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(160.811) </td>
+                </tr>
+                <tr>
+                  <td>Asian               </td>
+                  <td>5.189     </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(13.364)  </td>
+                </tr>
+                <tr>
+                  <td>White               </td>
+                  <td>501.147   </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(656.936) </td>
+                </tr>
+                <tr>
+                  <td>Hispanic            </td>
+                  <td>651.445   </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(459.057) </td>
+                </tr>
+                <tr>
+                  <td>Female              </td>
+                  <td>−76.542   </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(64.980)  </td>
+                </tr>
+                <tr>
+                  <td>GDP                 </td>
+                  <td>1929.519  </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(277.305) </td>
+                </tr>
+                <tr>
+                  <td>Density             </td>
+                  <td>−2379.227 </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(4128.216)</td>
+                </tr>
+                <tr>
+                  <td>Average Unemployment</td>
+                  <td>−8.275    </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(38.864)  </td>
+                </tr>
+                <tr>
+                  <td>Health Status       </td>
+                  <td>−0.803    </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(29.686)  </td>
+                </tr>
+                <tr>
+                  <td>Poverty             </td>
+                  <td>−41.656   </td>
+                </tr>
+                <tr>
+                  <td>                    </td>
+                  <td>(68.586)  </td>
+                </tr>
+                <tr>
+                  <td>Num.Obs.            </td>
+                  <td>56        </td>
+                </tr>
+                <tr>
+                  <td>R2                  </td>
+                  <td>0.976     </td>
+                </tr>
+                <tr>
+                  <td>R2 Adj.             </td>
+                  <td>0.953     </td>
+                </tr>
+                <tr>
+                  <td>R2 Within           </td>
+                  <td>0.501     </td>
+                </tr>
+                <tr>
+                  <td>R2 Within Adj.      </td>
+                  <td>0.305     </td>
+                </tr>
+                <tr>
+                  <td>AIC                 </td>
+                  <td>705.1     </td>
+                </tr>
+                <tr>
+                  <td>BIC                 </td>
+                  <td>761.8     </td>
+                </tr>
+                <tr>
+                  <td>RMSE                </td>
+                  <td>79.58     </td>
+                </tr>
+                <tr>
+                  <td>Std.Errors          </td>
+                  <td>by: state </td>
+                </tr>
+                <tr>
+                  <td>FE: state           </td>
+                  <td>X         </td>
+                </tr>
+                <tr>
+                  <td>FE: year            </td>
+                  <td>X         </td>
+                </tr>
+        </tbody>
+      </table>
+    </div>
+<!-- postamble start -->
+  </body>
+
+</html>
+<!-- postamble end -->
+<!-- hack to avoid NA insertion in last line -->
