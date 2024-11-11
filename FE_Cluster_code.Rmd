@@ -1,0 +1,190 @@
+---
+title: "Final Project"
+author: "Jueun Park"
+date: "2024-10-23"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+# library(tidyr)
+# library(ggthemes)
+# library(stringr)
+library(car) #VIF
+# library(purrr)
+# library(zoo)
+library(fixest)
+# library(car)
+library(cluster)  # For clustering
+library(factoextra)  # For visualizing clusters
+library(eclust)
+library(stargazer)
+library(modelsummary)
+```
+
+
+
+#Fixed Effect model
+```{r}
+#Preliminary Check
+fe_data <- read.csv("data_created/fe_data.csv")
+
+
+pre_check_model <- lm(total_hate_crimes ~  middle_Aged + old + Asian + Black + Hispanic +
+                     Male + gdp + density + avg_unemp + health_status + poverty + political + college_degree_rate, 
+                   data = fe_data)
+
+# Calculate VIFs
+vif_values <- vif(pre_check_model)
+print(vif_values)
+```
+
+
+```{r}
+#remove columns that show high multicolinearity
+
+#Standardize values
+fe_data_final_std <- fe_data %>%
+  select(-year, -state, -political, -total_hate_crimes) %>%
+  scale() %>%
+  as.data.frame() %>%
+  cbind(state = fe_data$state,
+        political=fe_data$political,
+        year = fe_data$year,
+        total_hate_crimes = fe_data$total_hate_crimes)
+
+pre_check_model_adj <- lm(total_hate_crimes ~ young + middle_Aged + Asian + White + Hispanic + Female +
+                   gdp + density + avg_unemp + health_status + poverty + political,
+                   data = fe_data_final_std)
+
+# Calculate VIFs
+vif_values <- vif(pre_check_model_adj)
+print(vif_values)
+```
+
+
+```{r}
+# Run the fixed effects model
+fe_model <- feols(total_hate_crimes ~ young + middle_Aged + Asian + White + Hispanic + Female +
+                  gdp + density + avg_unemp + health_status + poverty + political | state + year,
+                  data = fe_data_final_std)
+
+# Display model summary
+summary(fe_model)
+
+modelsummary(fe_model,
+             coef_map = c("young" = "Young", "middle_Aged" = "Middle-Aged", "Asian" = "Asian", 
+                          "White" = "White", "Hispanic" = "Hispanic", "Female" = "Female",
+                          "gdp" = "GDP", "density" = "Density", "avg_unemp" = "Average Unemployment",
+                          "health_status" = "Health Status", "poverty" = "Poverty Rate"),
+             gof_omit = "AIC|BIC|Log.Lik",
+             output = "html", 
+             title = "Fixed Effects Model Results for Total Hate Crimes")
+
+
+
+# Polished output for research paper
+modelsummary(fe_model,
+             coef_map = c("young" = "Young", 
+                          "middle_Aged" = "Middle-Aged", 
+                          "Asian" = "Asian", 
+                          "White" = "White", 
+                          "Hispanic" = "Hispanic", 
+                          "Female" = "Female",
+                          "gdp" = "GDP", 
+                          "density" = "Density", 
+                          "avg_unemp" = "Average Unemployment",
+                          "health_status" = "Health Status", 
+                          "poverty" = "Poverty Rate"),
+             gof_map = c("nobs" = "Num. Obs.", "r.squared" = "R-squared", "adj.r.squared" = "Adj. R-squared"), 
+             notes = "Fixed Effects for state and year included.",
+             title = "Fixed Effects Model Results for Total Hate Crimes",
+             output = "html")
+
+```
+
+#Clustering
+```{r}
+fe_data <- read.csv("data_created/fe_data.csv")
+
+cluster_data <- fe_data %>%
+  mutate(political_binary = ifelse(political == "Republican", 1, 0)) %>%
+  select(-year, -state, -total_hate_crimes, -political)
+  
+
+cluster_data_scaled <- scale(cluster_data)
+```
+
+```{r}
+#Determine optimal number of clusters
+K <-fviz_nbclust(cluster_data_scaled, kmeans, method = "wss")
+# K
+k <- 4
+```
+
+```{r}
+set.seed(4)
+
+km_result <- kmeans(cluster_data_scaled, centers = k, nstart = 20)
+fe_data$cluster <- km_result$cluster
+
+
+cluster_summary <- fe_data %>%
+  group_by(cluster) %>%
+  summarise(across(everything(), mean, na.rm = TRUE))
+
+cluster_result <- fe_data %>%
+  group_by(cluster) %>%
+  select(state, cluster) %>%
+  distinct(state, .keep_all = TRUE) %>%
+  arrange(cluster)
+
+stargazer(cluster_result, type = "text", summary = FALSE, rownames = FALSE)
+```
+
+#logistic regression
+
+```{r}
+vul_state <- c("Arizona", "California", "Hawaii", "Idaho", "Indiana", "Louisiana", "Minnesota", "Mississippi", "Nebraska", "Nevada", "New Jersey", "New York",	"Pennsylvania", "Washington")
+```
+
+```{r}
+logi_data <- read.csv("data_created/logi_data.csv") %>%
+  filter(state != "Federal")
+
+logi_data <- logi_data %>%
+  mutate(vulnerable = ifelse(state %in% vul_state, 1, 0))
+
+# Convert political leaning to binary
+logi_data <- logi_data %>%
+  mutate(political_binary = ifelse(political == "Democratic", 1, 0))
+```
+
+```{r}
+logistic_model <- lm(vulnerable ~ middle_Aged + Asian + Black + Hispanic + Female + gdp + 
+                      density + avg_unemp + health_status + poverty + college_degree_rate, 
+                      data = logi_data)
+
+vif_values <- vif(logistic_model)
+print(vif_values)
+
+summary(logistic_model)
+
+tidy_results <- broom::tidy(logistic_model, exponentiate = TRUE, conf.int = TRUE)
+print(tidy_results)
+```
+
+
+```{r}
+stargazer(logistic_model, type = "text", apply.coef = exp, ci = TRUE, 
+          single.row = TRUE, title = "Logistic Regression Results for Vulnerable States",
+          dep.var.labels = "Vulnerability (COVID-related increase in Asian Hate Crimes)",
+          covariate.labels = c("Middle-Aged", "Asian", "Black", "Hispanic", "Female", 
+                               "GDP", "Density", "Avg Unemployment", 
+                               "Health Status", "Poverty Rate", "College Degree Rate"),
+          out = "stat_result/logistic_model_results.html")
+```
+
