@@ -1,0 +1,112 @@
+---
+title: "data_exploratory_graphs"
+author: "Jueun Park"
+date: "2024-11-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggthemes)
+```
+
+# EDA
+```{r message=FALSE, warning=FALSE}
+#Exploratory Analysis: Changes in Hate Crime Over Time 
+hate_master <- read.csv("data_created/hate_master.csv")
+
+# Summarize total hate crimes by year
+hate_gen_trend_eda <- hate_master %>%
+  group_by(year) %>%
+  dplyr::summarize(total_hate_crimes = n(), .groups = "keep") %>%
+  mutate(event = case_when(
+    year == 2001 ~ "9/11",
+    year == 2008 ~ "Financial Crisis",
+    year == 2013 ~ "BLM Start",
+    year == 2020 ~ "Geroge Floyd",
+    TRUE ~ "None"
+  ))
+
+# Plotting the trend
+ggplot(hate_gen_trend_eda) +
+  aes(x=year, y=total_hate_crimes, color = event) +
+  geom_line(color = "black") +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(
+    "9/11" = "red", 
+    "Financial Crisis" = "red", 
+    "BLM Start" = "red", 
+    "COVID-19" = "red", 
+    "Geroge Floyd" = "red",
+    "None" = "black"
+  )) +
+  labs(title = "Hate Crimes Over Time",
+       subtitle = "Total reported cases 1991 - 2023",
+       x = "Year",
+       y = "Total Hate Crimes") +
+  scale_x_continuous(breaks=seq(1991, 2023, by = 5)) +
+  scale_y_continuous(breaks=seq(2500, 13000, by = 2500)) +
+  #COVID
+  geom_vline(xintercept = (2020 + 2023) / 2, color = "red", size = 20, alpha = 0.4) +
+  annotate(geom = "text", x = 2001, y = 10000, label = "911", color = "red", vjust = -0.5, fontface = "bold") + 
+  annotate(geom = "text", x = 2008, y = 8000, label = "Financial\nCrisis", color = "red", vjust = -0.5, fontface = "bold") +
+  annotate(geom = "text", x = 2013, y = 6500, label = "BLM", color = "red", vjust = 0.5, hjust = -0.1, fontface = "bold") + 
+  annotate(geom = "text", x = 2020, y = 10250, label = "George\nFloyd", color = "red", vjust = 0.5, hjust = 1.2, fontface = "bold") +
+  annotate(geom = "text", x = 2021.5, y = 2500, label = "COVID", color = "red", hjust = 0.5, vjust = -2, fontface = "bold") +
+  theme_fivethirtyeight() +
+  theme(plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5),
+        legend.position = "none",
+        axis.title.x = element_text(margin = margin(t = 10)), 
+        axis.title.y = element_text(margin = margin(r = 10)))
+```
+
+
+```{r message=FALSE, warning=FALSE}
+#Which Bias stand out the most?
+
+hate_crime_bias_type <- hate_master %>%
+  group_by(year, bias_category) %>%
+  dplyr::summarize(total_hate_crimes = n(), .groups = "keep")
+  
+
+# Plotting the trend
+ggplot(hate_crime_bias_type) +
+  aes(x=year, y=total_hate_crimes, color = bias_category) +
+  geom_line() +
+  labs(title = "Total Crimes over Time",
+       subtitle = ":Total reported cases by bias type: 1991-2023",
+       color = "Bias Type",
+       x = "Year",
+       y = "Total Hate Crimes") + 
+  scale_x_continuous(breaks=seq(1991, 2023, by = 5)) +
+  scale_y_continuous(breaks=seq(0, 6500, by = 1500)) +
+  theme_fivethirtyeight() +
+  theme(plot.title = element_text(hjust=0.5),
+        plot.subtitle = element_text(hjust=0.5))
+```
+
+
+```{r message=FALSE, warning=FALSE}
+#Asian hate crime increase?
+
+hate_crime_asian <- hate_master %>%
+  filter(grepl("asian", bias_desc)) %>%
+  group_by(year) %>%
+  dplyr::summarize(total_hate_crimes = n(), .groups = "keep")
+  
+
+# Plotting the trend
+ggplot(hate_crime_asian) +
+  aes(x=year, y=total_hate_crimes) +
+  geom_line() +
+  labs(title = "Asian Hate Crimes over Time",
+       subtitle = ":Total reported cases by bias type: 1991-2023",
+       color = "Bias Type",
+       x = "Year",
+       y = "Total Hate Crimes") + 
+  scale_x_continuous(breaks=seq(1991, 2023, by = 5)) +
+  theme_fivethirtyeight()
+```

@@ -1,0 +1,822 @@
+---
+title: "data_wrangling"
+author: "Jueun Park"
+date: "2024-11-07"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(plyr) # join all
+library(dplyr)
+library(tidyr)
+library(openxlsx)
+library(readxl)
+library(stringr) #string separate 
+```
+
+
+#1. Hate Crime Report data
+
+```{r}
+#State abbreviation data
+
+state_abbrev <- read.csv("data_raw/state_abbrev.csv")
+state_abbrev <- state_abbrev %>%
+  dplyr::rename(state = State,
+                state_abbrev = Abbreviation)
+```
+
+```{r setup, include=FALSE}
+#Cleaning hate crime report data
+
+#Read hate crime report data
+hate_raw <- read.csv("data_raw/hate_crime.csv")
+
+#Rename columns and add column of state abbreviation
+hate_master <- hate_raw %>%
+  dplyr::rename(year = data_year,state = state_name) %>%
+  left_join(state_abbrev, by=("state"))
+
+
+# Categorize sub bias type into bigger category and edit incident date column
+hate_master <- hate_master %>%
+  mutate(
+    bias_desc = str_to_lower(bias_desc),
+    bias_category = case_when(
+      str_detect(bias_desc, "black|white|asian|hispanic|arab|american indian") ~ "Race/Ethnicity",
+      str_detect(bias_desc, "jewish|muslim|catholic|protestant|hindu|sikh") ~ "Religion",
+      str_detect(bias_desc, "gay|lesbian|transgender|lgbtq|bisexual") ~ "Sexual Orientation/Gender Identity",
+      str_detect(bias_desc, "physical disability|mental disability") ~ "Disability",
+      str_detect(bias_desc, "heterosexual|gender non-conforming|male|female") ~ "Other Social Groups",
+      TRUE ~ "Intersectional Bias"
+    ),
+    incident_date = as.Date(incident_date, format = "%Y-%m-%d"),
+         year = year(incident_date),
+         month = month(incident_date, label = TRUE)
+  ) %>%
+  select(incident_id, state, state_abbr, region_name, year, month, offender_race, offender_ethnicity, victim_count, total_individual_victims, offense_name, bias_desc, bias_desc, bias_category)
+
+# Save hate master data
+write.csv(hate_master, file = "data_created/hate_master.csv", sep = "\t", row.names = F)
+```
+
+#2. GDP dataset
+```{r}
+#Cleaning GDP data
+
+#Read gdp dataset
+gdp_raw <- read.csv("data_raw/GDP_state.csv", skip=3)
+
+#Rename columns
+gdp_master <- dplyr::rename(gdp_raw,
+                   state = GeoName,
+                   "2016" = X2016,
+                   "2017" = X2017,
+                   "2018" = X2018,
+                   "2019" = X2019,
+                  "2020" = X2020,
+                  "2021" = X2021,
+                  "2022" = X2022,
+                  "2023" = X2023)
+
+#Remove column that is not needed
+gdp_master = subset(gdp_master, select = -c(GeoFips)) 
+
+#Final Tidy dataset for GDP
+gdp_master <- pivot_longer(
+  gdp_master,
+  cols = -state, 
+  names_to = "year", 
+  values_to = "gdp"
+)
+
+# Save gdp cleaned master data
+write.csv(gdp_master, file = "data_created/gdp_master.csv", sep = "\t", row.names = F)
+```
+
+
+#3.Political dataset
+```{r}
+#Cleaning Political data
+
+political_raw <- read.xlsx("data_raw/political_state.xlsx", sheet = "16. Appendix 1A")
+
+#Election result - 2020
+result_2020 <- political_raw %>% select("Appendix.A:.1996-2020.Presidential.General.Election", X2, X3)
+result_2020 <- result_2020[-(1:5),]
+
+result_2020 <- dplyr::rename(result_2020,
+                      state = "Appendix.A:.1996-2020.Presidential.General.Election",
+                      Democratic = X2,
+                      Republican = X3)
+
+result_2020 <- result_2020 %>%
+  mutate(
+    Democratic = as.numeric(Democratic),
+    Republican = as.numeric(Republican),
+    "2020" = ifelse(Democratic > Republican, "Democratic", "Republican")
+  )
+
+
+#Election result - 2016
+result_2016 <- political_raw %>% select("Appendix.A:.1996-2020.Presidential.General.Election", X4, X5)
+result_2016 <- result_2016[-(1:5),]
+
+result_2016 <- dplyr::rename(result_2016,
+                      state = "Appendix.A:.1996-2020.Presidential.General.Election",
+                      Democratic = X4,
+                      Republican = X5) %>%
+  mutate(
+    Democratic = as.numeric(Democratic),
+    Republican = as.numeric(Republican),
+    "2016" = ifelse(Democratic > Republican, "Democratic", "Republican")
+  )
+
+# Total Election result 2016-2020
+# Final Tidy dataset for political leaning
+political_master <- left_join(result_2020, result_2016, by=("state")) %>%
+  select(state, "2020", "2016") %>%
+  pivot_longer(
+  cols = -state, 
+  names_to = "year", 
+  values_to = "political"
+) %>%
+  filter(row_number() <= n()-6)
+
+# Save political cleaned master data
+write.csv(political_master, file = "data_created/political_master.csv", sep = "\t", row.names = F)
+```
+
+
+#4.Population Density dataset
+```{r}
+#Cleaning Population density data
+
+
+# Read files for this variable
+land_area <- read.csv("data_raw/state_landArea.csv")
+state_pop <- read_excel("data_raw/population_state.xls", sheet = "Annual")
+
+
+
+#Extract only year
+state_pop$DATE <- gsub("-01-01","", as.character(state_pop$DATE))
+
+
+#Tidy data
+popDens_master<- pivot_longer(
+  state_pop,
+  cols = -DATE, 
+  names_to = "state_abbrev", 
+  values_to = "population"
+)
+
+
+
+#Extract only state abbreviation
+popDens_master$state_abbrev <- gsub("POP","", as.character(popDens_master$state_abbrev))
+
+
+#Join necessary dataset
+popDens_master <- left_join(popDens_master, state_abbrev, by=("state_abbrev"))
+popDens_master <- left_join(popDens_master, land_area, by=("state"))
+
+population <- popDens_master %>%
+  select(DATE, state, population) %>%
+  mutate(population = population * 1000) %>%
+  dplyr::rename(year = DATE)
+  
+
+#Final dataset for population density
+popDens_master <- popDens_master %>%
+  mutate(density = round((population*1000)/LandArea), digits = 2) %>%
+  select(state, state_abbrev, DATE, density) %>%
+  dplyr::rename(year = DATE)
+
+# Save cleaned master data for population density
+write.csv(popDens_master, file = "data_created/popDens_master.csv", sep = "\t", row.names = F)
+```
+
+#5. Unemployment Rate dataset
+```{r}
+#Cleaning Unemployment data
+
+#read unemployment data by state
+unemp_raw <- read_xlsx("data_raw/unemployment_state.xlsx", skip = 6)
+
+#Final Tidy unemployment data
+unemp_master <- unemp_raw %>%
+  select("...2","Labor force...3", "rate") %>%
+  dplyr::rename(state ="...2",
+         year = "Labor force...3",
+         unemp_rate = "rate") %>%
+  filter(year > 2015) %>%
+  group_by(state, year) %>% 
+  dplyr::summarize(avg_unemp = (round(mean(unemp_rate),2))/100, .groups = "keep")
+
+# Save cleaned master data for unemployment rate
+write.csv(unemp_master, file = "data_created/unemp_master.csv", sep = "\t", row.names = F)
+```
+
+#6.Gender distribution
+```{r}
+#Cleaning gender distribution data
+
+#Reading all the dataset for gender distribution(2016-2023)
+gender_2023 <- read.csv("data_raw/sex_2023.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2023" = Male,
+         "Female 2023" = Female)
+
+gender_2022 <- read.csv("data_raw/sex_2022.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2022" = Male,
+         "Female 2022" = Female)
+
+gender_2021 <- read.csv("data_raw/sex_2021.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2021" = Male,
+         "Female 2021" = Female)
+
+gender_2019 <- read.csv("data_raw/sex_2019.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2019" = Male,
+         "Female 2019" = Female)
+
+gender_2018 <- read.csv("data_raw/sex_2018.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2018" = Male,
+         "Female 2018" = Female)
+
+gender_2017 <- read.csv("data_raw/sex_2017.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2017" = Male,
+         "Female 2017" = Female)
+
+gender_2016 <- read.csv("data_raw/sex_2016.csv", skip = 2) %>%
+  select(Location, Male, Female) %>%
+  dplyr::rename(state = Location,
+         "Male 2016" = Male,
+         "Female 2016" = Female)
+
+
+#Join all the dataset
+gender_raw <- join_all(list(gender_2016, gender_2017, gender_2018, gender_2019, gender_2021, gender_2022, gender_2023), by=("state"), type = "left")
+
+
+#Final tidy gender distribution data
+gender_master <- pivot_longer(
+  gender_raw,
+  cols = -state, 
+  names_to = "gender", 
+  values_to = "gender_dist"
+)
+
+gender_master[c('gender', 'year')] <- str_split_fixed(gender_master$gender, ' ', 2)
+
+# Save cleaned master data for gender distribution
+write.csv(gender_master, file = "data_created/gender_master.csv", sep = "\t", row.names = F)
+```
+
+#7. Race Distribtuion
+```{r}
+#Cleaning race distribution data
+
+#Reading all the dataset for race distribution(2016-2023)
+race_2023 <- read.csv("data_raw/race_2023.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2023" = White,
+         "Black 2023" = Black,
+         "Hispanic 2023" = Hispanic,
+         "Asian 2023" = Asian)
+
+race_2022 <- read.csv("data_raw/race_2022.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2022" = White,
+         "Black 2022" = Black,
+         "Hispanic 2022" = Hispanic,
+         "Asian 2022" = Asian)
+
+race_2021 <- read.csv("data_raw/race_2021.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2021" = White,
+         "Black 2021" = Black,
+         "Hispanic 2021" = Hispanic,
+         "Asian 2021" = Asian)
+
+race_2019 <- read.csv("data_raw/race_2019.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2019" = White,
+         "Black 2019" = Black,
+         "Hispanic 2019" = Hispanic,
+         "Asian 2019" = Asian)
+
+race_2018 <- read.csv("data_raw/race_2018.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2018" = White,
+         "Black 2018" = Black,
+         "Hispanic 2018" = Hispanic,
+         "Asian 2018" = Asian)
+
+race_2017 <- read.csv("data_raw/race_2017.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2017" = White,
+         "Black 2017" = Black,
+         "Hispanic 2017" = Hispanic,
+         "Asian 2017" = Asian)
+
+race_2016 <- read.csv("data_raw/race_2016.csv", skip = 2) %>%
+  select(Location, White, Black, Hispanic, Asian) %>%
+  dplyr::rename(state = Location,
+         "White 2016" = White,
+         "Black 2016" = Black,
+         "Hispanic 2016" = Hispanic,
+         "Asian 2016" = Asian)
+  
+race_2016$"Black 2016" <-gsub("<","0.",as.numeric(race_2016$"Black 2016"))
+race_2017$"Black 2017" <-gsub("<","0.",as.numeric(race_2017$"Black 2017"))
+race_2018$"Black 2018" <-gsub("<","0.",as.numeric(race_2018$"Black 2018"))
+
+
+#Join all the dataset
+race_master <- join_all(list(race_2016, race_2017, race_2018, race_2019, race_2021, race_2022, race_2023), by=("state"), type = "left")
+
+# Clean data
+race_master <- race_master[-(54:65),]
+race_master[race_master == "N/A"] <- NA
+
+race_master$"Black 2016" <- as.numeric(as.character(race_master$"Black 2016"))
+race_master$"Asian 2016" <- as.numeric(as.character(race_master$"Asian 2016"))
+race_master$"Black 2017" <- as.numeric(as.character(race_master$"Black 2017"))
+race_master$"Asian 2017" <- as.numeric(as.character(race_master$"Asian 2017"))
+race_master$"Black 2018" <- as.numeric(as.character(race_master$"Black 2018"))
+race_master$"Asian 2018" <- as.numeric(as.character(race_master$"Black 2018"))
+race_master$"Black 2019" <- as.numeric(as.character(race_master$"Black 2019"))
+race_master$"Asian 2019" <- as.numeric(as.character(race_master$"Black 2019"))
+race_master$"Asian 2021" <- as.numeric(as.character(race_master$"Black 2021"))
+race_master$"Asian 2023" <- as.numeric(as.character(race_master$"Black 2023"))
+
+#Final tidy gender distribution data
+race_master <- race_master %>%
+  pivot_longer(
+  cols = -state, 
+  names_to = "race", 
+  values_to = "race_dist"
+)
+
+race_master[c('race', 'year')] <- str_split_fixed(race_master$race, ' ', 2)
+
+# Save cleaned master data for race density
+write.csv(race_master, file = "data_created/race_master.csv", sep = "\t", row.names = F)
+```
+
+
+#8. Age distribution
+```{r}
+#Cleaning age distribution data
+
+#Reading all the dataset for age distribution(2016-2023)
+age_2023 <- read.csv("data_raw/age_2023.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2023" = Children.0.18,
+               "19-25 2023" = Adults.19.25,
+               "26-34 2023" = Adults.26.34,
+                "35-54 2023" = Adults.35.54,
+                "55-64 2023" = Adults.55.64,
+                "65+ 2023" = X65.)
+
+age_2022 <- read.csv("data_raw/age_2022.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2022" = Children.0.18,
+               "19-25 2022" = Adults.19.25,
+               "26-34 2022" = Adults.26.34,
+                "35-54 2022" = Adults.35.54,
+                "55-64 2022" = Adults.55.64,
+                "65+ 2022" = X65.)
+
+age_2021 <- read.csv("data_raw/age_2021.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2021" = Children.0.18,
+               "19-25 2021" = Adults.19.25,
+               "26-34 2021" = Adults.26.34,
+                "35-54 2021" = Adults.35.54,
+                "55-64 2021" = Adults.55.64,
+                "65+ 2021" = X65.)
+
+age_2019 <- read.csv("data_raw/age_2019.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2019" = Children.0.18,
+               "19-25 2019" = Adults.19.25,
+               "26-34 2019" = Adults.26.34,
+                "35-54 2019" = Adults.35.54,
+                "55-64 2019" = Adults.55.64,
+                "65+ 2019" = X65.)
+
+age_2018 <- read.csv("data_raw/age_2018.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2018" = Children.0.18,
+               "19-25 2018" = Adults.19.25,
+               "26-34 2018" = Adults.26.34,
+                "35-54 2018" = Adults.35.54,
+                "55-64 2018" = Adults.55.64,
+                "65+ 2018" = X65.)
+
+age_2017 <- read.csv("data_raw/age_2017.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2017" = Children.0.18,
+               "19-25 2017" = Adults.19.25,
+               "26-34 2017" = Adults.26.34,
+                "35-54 2017" = Adults.35.54,
+                "55-64 2017" = Adults.55.64,
+                "65+ 2017" = X65.)
+
+age_2016 <- read.csv("data_raw/age_2016.csv", skip = 2) %>%
+  select(Location, Children.0.18, Adults.19.25, Adults.26.34,Adults.35.54, Adults.55.64,X65.) %>%
+  dplyr::rename(state = Location,
+               "0-18 2016" = Children.0.18,
+               "19-25 2016" = Adults.19.25,
+               "26-34 2016" = Adults.26.34,
+                "35-54 2016" = Adults.35.54,
+                "55-64 2016" = Adults.55.64,
+                "65+ 2016" = X65.)
+
+#Join all the dataset
+age_raw <- join_all(list(age_2016, age_2017, age_2018, age_2019, age_2021, age_2022, age_2023), by=("state"), type = "left")    
+
+
+#Final tidy age distribution data
+age_master <- age_raw %>%
+  pivot_longer(
+  cols = -state, 
+  names_to = "age", 
+  values_to = "age_dist"
+)
+
+
+age_master[c('age', 'year')] <- str_split_fixed(age_master$age, ' ', 2)   
+
+
+# Save cleaned master data for age distribution
+write.csv(age_master, file = "data_created/age_master.csv", sep = "\t", row.names = F)
+```
+#9. Poverty rate
+```{r}
+# poverty rate
+
+#Read poverty data
+poverty_2023 <- read.csv("data_raw/poverty_2023.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2023) %>%
+  slice(1:53)
+
+
+poverty_2022 <- read.csv("data_raw/poverty_2022.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2022) %>%
+  slice(1:53)
+  
+poverty_2021 <- read.csv("data_raw/poverty_2021.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2021) %>%
+  slice(1:53)
+
+poverty_2019 <- read.csv("data_raw/poverty_2019.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2019) %>%
+  slice(1:53)
+
+poverty_2018 <- read.csv("data_raw/poverty_2018.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2018) %>%
+  slice(1:53)
+
+poverty_2017 <- read.csv("data_raw/poverty_2017.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2017) %>%
+  slice(1:53)
+
+
+poverty_2016 <- read.csv("data_raw/poverty_2016.csv", skip = 2) %>%
+  select(state = Location, poverty = Total) %>%
+  mutate(year = 2016) %>%
+  slice(1:53)
+
+
+#Join all the dataset
+poverty_master <- bind_rows(poverty_2016, poverty_2017, poverty_2018, poverty_2019, poverty_2021, poverty_2022, poverty_2023)
+
+# Save cleaned master data for poverty rate
+write.csv(poverty_master, file = "data_created/poverty_master.csv", sep = "\t", row.names = F)
+```
+
+#10.Education level
+```{r}
+#education
+
+education_raw <- read_excel("data_raw/education_state.xls", sheet = "Annual")
+
+#Extract only year
+education_raw$DATE <- gsub("-01-01","", as.character(education_raw$DATE))
+
+#Tidy data
+education_master <- pivot_longer(
+  education_raw,
+  cols = -DATE, 
+  names_to = "state_abbrev", 
+  values_to = "college_degree_rate"
+)
+
+#Extract only state abbreviation
+education_master$state_abbrev <- gsub("GCT1502","", as.character(education_master$state_abbrev))
+
+education_master <- left_join(education_master, state_abbrev, by=("state_abbrev")) %>%
+  select(state, year = DATE, college_degree_rate) %>%
+  mutate(college_degree_rate = college_degree_rate/100)
+
+# Save cleaned master data for Bachelor degree rate
+write.csv(education_master, file = "data_created/education_master.csv", sep = "\t", row.names = F)
+```
+
+#11. Covid confirmed cases
+```{r}
+#COVID cases
+
+covid_master <- read.csv("data_raw/covid_state.csv")  %>%
+  mutate(date_updated = as.Date(date_updated, format = "%m/%d/%Y"),
+         year = year(date_updated),
+         month = month(date_updated, label = TRUE)) %>%
+  select(state, year, month, new_cases, tot_cases) %>%
+  group_by(state, year, month) %>%
+  dplyr::summarise(cum_total_cases = max(tot_cases, na.rm = TRUE),
+            monthly_new_cases = sum(new_cases, na.rm = TRUE),
+            .groups = "keep") %>%
+  dplyr::rename(state_abbrev = state) %>%
+  left_join(state_abbrev, by=("state_abbrev"))
+
+# Save cleaned master data for Covid confirmed cases
+write.csv(covid_master, file = "data_created/covid_master.csv", sep = "\t", row.names = F)
+```
+
+#12. Health status
+```{r}
+#health
+
+
+health_2016 <- read.csv("data_raw/health_2016.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2016) %>%
+  slice(1:55)
+
+health_2017 <- read.csv("data_raw/health_2017.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2017,
+         health_status = as.numeric(health_status)) %>%
+  slice(1:55)
+
+health_2018 <- read.csv("data_raw/health_2018.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2018,
+         health_status = as.numeric(health_status)) %>%
+  slice(1:55)
+
+health_2019 <- read.csv("data_raw/health_2019.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2019,
+         health_status = as.numeric(health_status)) %>%
+  slice(1:55)
+
+health_2020 <- read.csv("data_raw/health_2020.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2020,
+         health_status = as.numeric(health_status)) %>%
+  slice(1:55)
+
+health_2021 <- read.csv("data_raw/health_2021.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2021,
+         health_status = as.numeric(health_status)) %>%
+  slice(1:55)
+
+health_2022 <- read.csv("data_raw/health_2022.csv", skip = 2) %>%
+  select(state = Location, health_status = All.Adults) %>%
+  mutate(year = 2022,
+         health_status = as.numeric(health_status)) %>%
+  slice(1:55)
+
+health_master <- bind_rows(health_2016, health_2017, health_2018, health_2019, health_2020, health_2021, health_2022)
+
+# Save cleaned master data for health status
+write.csv(health_master, file = "data_created/health_master.csv", sep = "\t", row.names = F)
+```
+
+#Data for Fixed effect model
+```{r message=FALSE, warning=FALSE}
+# Identify which social factors were most closely associated with the increase in hate crimes
+
+# List of vulnerable states
+vul_state <- c("Arizona", "California", "Hawaii", "Idaho", "Indiana", "Louisiana", "Minnesota", "Mississippi", "Nebraska", "Nevada", "New Jersey", "New York",	"Pennsylvania", "Washington")
+```
+
+
+#Hate data
+```{r message=FALSE, warning=FALSE}
+# Hate crime data
+fe_hate <- read.csv("data_created/hate_master.csv") %>%
+  filter(year > 2015) %>%
+  filter(state %in% vul_state) %>%
+  group_by(year, state) %>%
+  dplyr::summarize(total_hate_crimes = n(), .groups = "keep") %>%
+  left_join(population, by=c("state", "year"))
+
+fe_hate <- fe_hate %>%
+  mutate(cases_per_100k = (total_hate_crimes / population) * 100000) %>%
+  select(year, state, cases_per_100k)
+```
+
+
+
+#Age distribution data
+```{r message=FALSE, warning=FALSE}
+fe_age <- read.csv("data_created/age_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  complete(state, age, year = 2016:2023, fill = list(age_dist = NA)) %>%
+  arrange(state, age, year) %>%
+  group_by(state, age) %>%
+  mutate(age_dist = na.approx(age_dist, na.rm = FALSE)) %>% 
+  ungroup()
+
+fe_age <- fe_age %>%
+  filter(year >= 2016) %>%  
+  pivot_wider(names_from = age, values_from = age_dist) %>%
+  mutate(
+    young = `0-18` + `19-25`,
+    middle_Aged = `26-34` + `35-54`,
+    old = `55-64` + `65+`
+  ) %>%
+  select(state, year, young, middle_Aged, old)
+```
+
+
+#Race distribution data
+```{r message=FALSE, warning=FALSE}
+fe_race <- read.csv("data_created/race_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  complete(state, race, year = 2016:2023, fill = list(race_dist = NA)) %>%
+  arrange(state, race, year) %>%
+  group_by(state, race) %>%
+  mutate(race_dist = na.approx(race_dist, na.rm = FALSE)) %>% 
+  ungroup() %>%
+  filter(year >= 2016) %>%
+  pivot_wider(names_from = race, values_from = race_dist)
+```
+
+
+#Gender
+```{r message=FALSE, warning=FALSE}
+fe_gender <- read.csv("data_created/gender_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  complete(state, gender, year = 2016:2023, fill = list(gender_dist = NA)) %>%
+  arrange(state, gender, year) %>%
+  group_by(state, gender) %>%
+  mutate(gender_dist = na.approx(gender_dist, na.rm = FALSE)) %>%
+  ungroup() %>%
+  filter(year >= 2016) %>%
+  pivot_wider(names_from = gender, values_from = gender_dist)
+```
+
+
+#GDP
+```{r message=FALSE, warning=FALSE}
+fe_gdp <- read.csv("data_created/gdp_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  filter(year >= 2016)
+```
+
+
+#Density
+```{r message=FALSE, warning=FALSE}
+fe_density <- read.csv("data_created/popDens_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  filter(year >= 2016) %>%
+  select(-state_abbrev)
+```
+
+
+#Political
+```{r message=FALSE, warning=FALSE}
+fe_poitical <- read.csv("data_created/political_master.csv") %>%
+  complete(state, year = 2016:2023) %>%
+  arrange(state, year) %>%
+  group_by(state) %>%
+  fill(political, .direction = "downup") %>%
+  ungroup() %>%
+  filter(state %in% vul_state) %>%
+  filter(year >= 2016)
+```
+
+
+#Unemployment Rate
+```{r message=FALSE, warning=FALSE}
+fe_unemployment <- read.csv("data_created/unemp_master.csv") %>%
+  filter(year >= 2016 & year < 2024) %>%
+  filter(state %in% vul_state)
+```
+
+
+#Health status
+```{r message=FALSE, warning=FALSE}
+fe_health <- read.csv("data_created/health_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  complete(state, year = 2016:2023, fill = list(health_status = NA)) %>%
+  arrange(state, year) %>%
+  group_by(state) %>%
+  mutate(health_status = na.approx(health_status, na.rm = FALSE, rule = 2)) %>% 
+  ungroup() %>%
+  filter(year >= 2016)
+```
+
+
+#Poverty rate
+```{r message=FALSE, warning=FALSE}
+fe_poverty <- read.csv("data_created/poverty_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  complete(state, year = 2016:2023, fill = list(poverty = NA)) %>%
+  arrange(state, year) %>%
+  group_by(state) %>%
+  mutate(poverty = na.approx(poverty, na.rm = FALSE)) %>% 
+  ungroup() %>%
+  filter(year >= 2016)
+```
+
+
+# Education(Bachelor degree attained rate)
+```{r message=FALSE, warning=FALSE}
+fe_education <- read.csv("data_created/education_master.csv") %>%
+  filter(state %in% vul_state) %>%
+  filter(year >= 2016)
+```
+
+# Median Household income data
+```{r}
+fe_gini_index <- read.csv("data_raw/gini_index.csv") %>%
+  complete(state, year = 2016:2023, fill = list(gini_index = NA)) %>%
+  group_by(state) %>%
+  mutate(gini_index = na.approx(gini_index, na.rm = FALSE))
+```
+
+
+# Share Non Citizen data
+```{r}
+fe_share_non_citizen <- read.csv("data_raw/share_non_citizens.csv") %>%
+  complete(state, year = 2016:2023, fill = list(share_non_citizens = NA)) %>%
+  group_by(state) %>%
+  mutate(share_non_citizens = na.approx(share_non_citizens, na.rm = FALSE))
+```
+
+# Share white poverty data
+```{r}
+fe_share_white_poverty <- read.csv("data_raw/share_white_poverty.csv") %>%
+  complete(state, year = 2016:2023, fill = list(share_white_poverty = NA)) %>%
+  group_by(state) %>%
+  mutate(share_white_poverty = na.approx(share_white_poverty, na.rm = FALSE))
+```
+
+
+# Median Household Income data
+```{r}
+fe_median_household_income <- read.csv("data_raw/median_household_income.csv")
+```
+
+
+```{r message=FALSE, warning=FALSE}
+fe_data <- plyr::join_all(
+  list(fe_hate, fe_age, fe_gender, fe_density, fe_poitical, fe_unemployment, fe_health, fe_education,
+       fe_gini_index, fe_share_non_citizen, fe_share_white_poverty, fe_median_household_income),
+  by=c("state","year"),
+  type="left")
+
+# Save fixed effect model master data
+write.csv(fe_data, file = "data_created/fe_data.csv", sep = "\t", row.names = F)
+```
+
+
+

@@ -1,0 +1,124 @@
+---
+title: "cor_and_fixed_effect"
+author: "Jueun Park"
+date: "2024-10-23"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(car) #VIF
+library(fixest)
+library(stargazer)
+library(reshape2)
+library(modelsummary)
+```
+
+
+
+#Fixed Effect model
+```{r message=FALSE, warning=FALSE}
+# Read and standardizes the data
+
+fe_data <- read.csv("data_created/fe_data.csv")
+
+
+#Standardize values
+fe_data_final_std <- fe_data %>%
+  select(-year, -state, -political, -cases_per_100k, -middle_Aged, -Female) %>%
+  scale() %>%
+  as.data.frame() %>%
+  cbind(state = fe_data$state,
+        political=fe_data$political,
+        year = fe_data$year,
+        cases_per_100k = fe_data$cases_per_100k)
+
+fe_data_final_std$political <- as.numeric(as.factor(fe_data_final_std$political))
+```
+
+
+```{r message=FALSE, warning=FALSE}
+#Preliminary Check
+pre_check_model <- lm(cases_per_100k ~  young + old + Male + density + avg_unemp + health_status +
+                        college_degree_rate + gini_index + share_non_citizens + share_white_poverty +
+                        political, 
+                   data = fe_data_final_std)
+
+# Calculate VIFs
+vif(pre_check_model)
+```
+
+```{r message=FALSE, warning=FALSE}
+#Correlational analysis
+
+# Pre-COVID period: 2016–2019
+pre_covid <- fe_data_final_std %>% filter(year >= 2016 & year <= 2019)
+
+# Post-COVID period: 2020–2023
+post_covid <- fe_data_final_std %>% filter(year >= 2020 & year <= 2023)
+
+pre_covid_numeric <- pre_covid %>%
+  select(cases_per_100k, young, old, Male, density, avg_unemp, 
+         health_status, college_degree_rate, gini_index, 
+         share_non_citizens, share_white_poverty)
+
+post_covid_numeric <- post_covid %>%
+  select(cases_per_100k, young, old, Male, density, avg_unemp, 
+         health_status, college_degree_rate, gini_index, 
+         share_non_citizens, share_white_poverty)
+
+#Correalation test
+pre_covid_corr <- cor(pre_covid_numeric, use = "complete.obs")
+post_covid_corr <- cor(post_covid_numeric, use = "complete.obs")
+
+
+pre_covid_melt <- melt(pre_covid_corr)
+post_covid_melt <- melt(post_covid_corr)
+
+
+#Heatmap:pre-covid
+pre_heatmap <- ggplot(data = pre_covid_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 4) +
+  theme_minimal() +
+  labs(title = "Pre-COVID Correlation Heatmap (2016–2019)",
+       x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Heatmap:post-covid
+post_heatmap <- ggplot(data = post_covid_melt, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                       midpoint = 0, limit = c(-1, 1), space = "Lab",
+                       name = "Correlation") +
+  geom_text(aes(label = round(value, 2)), color = "black", size = 4) +
+  theme_minimal() +
+  labs(title = "Post-COVID Correlation Heatmap (2020–2023)",
+       x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot both heatmaps
+print(pre_heatmap)
+print(post_heatmap)
+```
+
+```{r message=FALSE, warning=FALSE}
+# Run the fixed effects model
+fe_model <- feols(cases_per_100k ~ density + college_degree_rate + share_non_citizens +
+                    share_white_poverty + health_status
+                  | state + year, 
+                  data = fe_data_final_std)
+
+# Display model summary
+summary(fe_model)
+
+modelsummary(fe_model, 
+             type = "html",
+             output = "stat_result/test.html")
+```
